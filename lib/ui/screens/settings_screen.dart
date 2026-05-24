@@ -98,6 +98,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       border: OutlineInputBorder(),
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '请填写完整接口地址，不要只填域名。\nOpenAI: https://api.openai.com/v1/chat/completions\nDeepSeek: https://api.deepseek.com/v1/chat/completions',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600], height: 1.5),
+                  ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _apiKeyController,

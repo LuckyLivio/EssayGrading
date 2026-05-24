@@ -69,6 +69,9 @@ class AiService {
       if (e.type == DioExceptionType.connectionTimeout) errorMsg = '连接超时，请检查网络';
       if (e.type == DioExceptionType.receiveTimeout) errorMsg = '服务器响应超时';
       if (e.response?.statusCode == 401) errorMsg = 'API Key 无效';
+      if (e.response?.statusCode == 404) {
+        errorMsg = '接口地址无效，请在设置中填写完整的聊天接口地址，例如 /v1/chat/completions';
+      }
       throw Exception('$errorMsg: ${e.message}');
     } catch (e) {
       throw Exception('AI批改失败: $e');

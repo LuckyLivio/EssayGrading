@@ -2,7 +2,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 
 class OcrService {
   Future<String> recognizeText(String imagePath) async {
-    final textRecognizer = TextRecognizer(script: TextRecognitionScript.chinese);
+    final textRecognizer = TextRecognizer();
     final inputImage = InputImage.fromFilePath(imagePath);
     
     try {

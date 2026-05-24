@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 15 起默认强制边到边，这里对裁剪页单独关闭，避免工具栏顶到状态栏下面 -->
+    <style name="Theme.App.Cropper" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
+</resources>

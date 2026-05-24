@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/providers/app_providers.dart';
 import '../../data/models/question.dart';
@@ -40,9 +39,18 @@ class _GradingScreenState extends ConsumerState<GradingScreen> {
     }
     
     try {
-      final XFile? pickedFile = await _picker.pickImage(source: source);
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+        requestFullMetadata: false,
+      );
       if (pickedFile != null) {
-        await _cropImage(pickedFile.path);
+        setState(() {
+          _image = File(pickedFile.path);
+        });
+        _processOCR();
       }
     } catch (e) {
       _showError('获取图片失败: $e');
@@ -73,49 +81,6 @@ class _GradingScreenState extends ConsumerState<GradingScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _cropImage(String path) async {
-    try {
-      final croppedFile = await ImageCropper().cropImage(
-        sourcePath: path,
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: '裁剪图片',
-            toolbarColor: Theme.of(context).primaryColor,
-            toolbarWidgetColor: Colors.white,
-            initAspectRatio: CropAspectRatioPreset.original,
-            lockAspectRatio: false,
-            aspectRatioPresets: [
-              CropAspectRatioPreset.square,
-              CropAspectRatioPreset.ratio3x2,
-              CropAspectRatioPreset.original,
-              CropAspectRatioPreset.ratio4x3,
-              CropAspectRatioPreset.ratio16x9
-            ],
-          ),
-          IOSUiSettings(
-            title: '裁剪图片',
-            aspectRatioPresets: [
-              CropAspectRatioPreset.square,
-              CropAspectRatioPreset.ratio3x2,
-              CropAspectRatioPreset.original,
-              CropAspectRatioPreset.ratio4x3,
-              CropAspectRatioPreset.ratio16x9
-            ],
-          ),
-        ],
-      );
-
-      if (croppedFile != null) {
-        setState(() {
-          _image = File(croppedFile.path);
-        });
-        _processOCR();
-      }
-    } catch (e) {
-      _showError('裁剪图片失败: $e');
-    }
   }
 
   Future<void> _processOCR() async {
