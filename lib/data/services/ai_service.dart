@@ -53,8 +53,23 @@ class AiService {
       );
 
       final String content = response.data['choices'][0]['message']['content'];
-      final Map<String, dynamic> jsonMap = jsonDecode(content);
+      
+      // 更加稳健的 JSON 提取逻辑
+      String jsonStr = content.trim();
+      if (jsonStr.contains('```json')) {
+        jsonStr = jsonStr.split('```json')[1].split('```')[0].trim();
+      } else if (jsonStr.contains('```')) {
+        jsonStr = jsonStr.split('```')[1].split('```')[0].trim();
+      }
+      
+      final Map<String, dynamic> jsonMap = jsonDecode(jsonStr);
       return GradingResult.fromJson(jsonMap);
+    } on DioException catch (e) {
+      String errorMsg = '网络请求失败';
+      if (e.type == DioExceptionType.connectionTimeout) errorMsg = '连接超时，请检查网络';
+      if (e.type == DioExceptionType.receiveTimeout) errorMsg = '服务器响应超时';
+      if (e.response?.statusCode == 401) errorMsg = 'API Key 无效';
+      throw Exception('$errorMsg: ${e.message}');
     } catch (e) {
       throw Exception('AI批改失败: $e');
     }

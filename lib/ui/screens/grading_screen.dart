@@ -20,7 +20,6 @@ class GradingScreen extends ConsumerStatefulWidget {
 class _GradingScreenState extends ConsumerState<GradingScreen> {
   final ImagePicker _picker = ImagePicker();
   File? _image;
-  String _recognizedText = '';
   bool _isProcessing = false;
   String _processStatus = '';
 
@@ -34,6 +33,12 @@ class _GradingScreenState extends ConsumerState<GradingScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    final storage = ref.read(storageServiceProvider);
+    if (storage.getApiKey().isEmpty) {
+      _showSettingsReminder();
+      return;
+    }
+    
     try {
       final XFile? pickedFile = await _picker.pickImage(source: source);
       if (pickedFile != null) {
@@ -42,6 +47,32 @@ class _GradingScreenState extends ConsumerState<GradingScreen> {
     } catch (e) {
       _showError('获取图片失败: $e');
     }
+  }
+
+  void _showSettingsReminder() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('需要配置 API Key'),
+        content: const Text('在使用 AI 批改功能前，请先在“设置”中配置您的 API Key。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Note: In a real app we'd navigate to the settings tab
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('请点击底部导航栏的“设置”进行配置')),
+              );
+            },
+            child: const Text('去配置'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _cropImage(String path) async {
@@ -99,7 +130,6 @@ class _GradingScreenState extends ConsumerState<GradingScreen> {
       final ocrService = ref.read(ocrServiceProvider);
       final text = await ocrService.recognizeText(_image!.path);
       setState(() {
-        _recognizedText = text;
         _textController.text = text;
       });
       _showEditTextDialog();
@@ -208,92 +238,206 @@ class _GradingScreenState extends ConsumerState<GradingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('申论批改官')),
+      appBar: AppBar(
+        title: const Text('申论批改官'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.black87,
+      ),
+      extendBodyBehindAppBar: false,
       body: _isProcessing
-          ? Center(
+          ? Container(
+              width: double.infinity,
+              color: Colors.white.withOpacity(0.9),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(),
+                  const SizedBox(
+                    width: 80,
+                    height: 80,
+                    child: CircularProgressIndicator(strokeWidth: 6),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    _processStatus,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueAccent,
+                    ),
+                  ),
                   const SizedBox(height: 16),
-                  Text(_processStatus, style: const TextStyle(fontSize: 16)),
+                  const Text('这可能需要几十秒，请稍候...', style: TextStyle(color: Colors.grey)),
                 ],
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('选择题目', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<Question>(
-                    value: _selectedQuestion,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  // 题目选择区
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.blue.withOpacity(0.1)),
                     ),
-                    items: mockQuestions.map((q) {
-                      return DropdownMenuItem(
-                        value: q,
-                        child: Text(q.title, maxLines: 1, overflow: TextOverflow.ellipsis),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedQuestion = val;
-                      });
-                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.library_books, color: Colors.blue, size: 20),
+                            SizedBox(width: 8),
+                            Text('选择题目', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<Question>(
+                          value: _selectedQuestion,
+                          isExpanded: true,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                          ),
+                          items: mockQuestions.map((q) {
+                            return DropdownMenuItem(
+                              value: q,
+                              child: Text(q.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedQuestion = val;
+                            });
+                          },
+                        ),
+                        if (_selectedQuestion != null) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _selectedQuestion!.content,
+                              maxLines: 4,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 13, color: Colors.grey[800], height: 1.5),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 24),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
+                  const SizedBox(height: 40),
+                  
+                  // 拍照引导区
+                  Column(
+                    children: [
+                      const Text(
+                        '准备好你的答卷了吗？',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '请确保光线充足，字迹清晰',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 40),
+                      
+                      // 拍照大按钮
+                      GestureDetector(
+                        onTap: () => _pickImage(ImageSource.camera),
+                        child: Container(
+                          width: 160,
+                          height: 160,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Theme.of(context).primaryColor,
+                                Theme.of(context).primaryColor.withBlue(255),
+                              ],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context).primaryColor.withOpacity(0.4),
+                                blurRadius: 25,
+                                offset: const Offset(0, 12),
+                              ),
+                            ],
+                          ),
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.camera_enhance, size: 56, color: Colors.white),
+                              SizedBox(height: 8),
+                              Text('拍照识别', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      
+                      // 辅助选项
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            _selectedQuestion?.content ?? '',
-                            style: const TextStyle(fontSize: 14, color: Colors.black87),
+                          _buildQuickAction(
+                            icon: Icons.photo_library,
+                            label: '从相册选',
+                            onTap: () => _pickImage(ImageSource.gallery),
+                          ),
+                          const SizedBox(width: 40),
+                          _buildQuickAction(
+                            icon: Icons.history,
+                            label: '查看历史',
+                            onTap: () {
+                              // Switch to history tab (this is a bit hacky since it's in a tab bar)
+                              // For now, let's just show a tip or navigate if possible
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('请通过底部导航栏进入历史记录')),
+                              );
+                            },
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  Center(
-                    child: InkWell(
-                      onTap: () => _pickImage(ImageSource.camera),
-                      borderRadius: BorderRadius.circular(64),
-                      child: Container(
-                        width: 128,
-                        height: 128,
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Theme.of(context).primaryColor.withOpacity(0.3),
-                              blurRadius: 16,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.camera_alt, size: 64, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Center(child: Text('点击拍照上传手写答案', style: TextStyle(fontSize: 16, color: Colors.grey))),
-                  const SizedBox(height: 16),
-                  TextButton.icon(
-                    onPressed: () => _pickImage(ImageSource.gallery),
-                    icon: const Icon(Icons.photo_library),
-                    label: const Text('从相册选择'),
+                    ],
                   ),
                 ],
               ),
             ),
+    );
+  }
+
+  Widget _buildQuickAction({required IconData icon, required String label, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.grey[700]),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        ],
+      ),
     );
   }
 }

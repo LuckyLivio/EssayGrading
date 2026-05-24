@@ -7,9 +7,16 @@ class OcrService {
     
     try {
       final RecognizedText recognizedText = await textRecognizer.processImage(inputImage);
-      return recognizedText.text;
+      String result = recognizedText.text.trim();
+      
+      if (result.isEmpty) {
+        throw Exception('未能识别到任何文字，请确保图片清晰且包含文字。');
+      }
+      
+      return result;
     } catch (e) {
-      throw Exception('文字识别失败: $e');
+      if (e is Exception) rethrow;
+      throw Exception('文字识别过程发生异常: $e');
     } finally {
       textRecognizer.close();
     }
