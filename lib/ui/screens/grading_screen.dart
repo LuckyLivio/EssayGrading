@@ -28,7 +28,7 @@ class _GradingScreenState extends ConsumerState<GradingScreen> {
   @override
   void initState() {
     super.initState();
-    _selectedQuestion = widget.initialQuestion ?? mockQuestions.first;
+    _selectedQuestion = widget.initialQuestion ?? builtInQuestions.first;
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -272,7 +272,7 @@ class _GradingScreenState extends ConsumerState<GradingScreen> {
                             ),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                           ),
-                          items: mockQuestions.map((q) {
+                          items: builtInQuestions.map((q) {
                             return DropdownMenuItem(
                               value: q,
                               child: Text(q.title, maxLines: 1, overflow: TextOverflow.ellipsis),
