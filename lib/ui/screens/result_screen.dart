@@ -19,13 +19,18 @@ class ResultScreen extends StatelessWidget {
     final scoreColor = _getScoreColor(result.score);
 
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('批改结果'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          '批改结果',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.share_outlined),
+            icon: Icon(Icons.share_outlined, color: Colors.grey[700]),
             onPressed: () {
-              // TODO: Implement share
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('分享功能开发中...')),
               );
@@ -38,142 +43,36 @@ class ResultScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 分数区
-            Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 20),
-                width: 180,
-                height: 180,
-                child: Stack(
-                  children: [
-                    Center(
-                      child: SizedBox(
-                        width: 160,
-                        height: 160,
-                        child: CircularProgressIndicator(
-                          value: result.score / 100,
-                          strokeWidth: 12,
-                          backgroundColor: scoreColor.withOpacity(0.1),
-                          valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                '${result.score}',
-                                style: TextStyle(
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.bold,
-                                  color: scoreColor,
-                                ),
-                              ),
-                              Text(
-                                '/100',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: scoreColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              result.level,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // 要点覆盖
+            _buildScoreCard(scoreColor, record.result),
+            const SizedBox(height: 20),
             if (result.keypoints.isNotEmpty) ...[
-              _buildSectionTitle('要点覆盖', Icons.checklist_rtl),
-              Card(
-                elevation: 0,
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: result.keypoints.map((kp) {
-                      final isHit = kp.status == '命中';
-                      final isPartial = kp.status == '部分命中';
-                      final color = isHit ? Colors.green : (isPartial ? Colors.orange : Colors.red);
-                      final icon = isHit ? Icons.check_circle : (isPartial ? Icons.info : Icons.cancel);
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Icon(icon, color: color, size: 20),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                kp.point, 
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: isHit ? Colors.black87 : Colors.black54,
-                                  fontWeight: isHit ? FontWeight.w500 : FontWeight.normal,
-                                )
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              kp.status, 
-                              style: TextStyle(
-                                color: color, 
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              )
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
+              _buildKeyPointsCard(result.keypoints),
               const SizedBox(height: 20),
             ],
-
-            _buildSectionTitle('结构评价', Icons.account_tree_outlined),
-            _buildCardText(result.structure),
-            const SizedBox(height: 20),
-
-            _buildSectionTitle('语言表达', Icons.translate),
-            _buildCardText(result.expression),
-            const SizedBox(height: 20),
-
-            _buildSectionTitle('改进建议', Icons.lightbulb_outline),
-            _buildCardText(result.suggestions),
-            const SizedBox(height: 20),
-
-            _buildSectionTitle('优化示例', Icons.auto_awesome_outlined),
-            _buildExampleRewrite(result.examplerewrite),
+            _buildSectionCard(
+              title: '结构评价',
+              icon: Icons.account_tree_outlined,
+              iconColor: Colors.blue,
+              content: result.structure,
+            ),
+            const SizedBox(height: 16),
+            _buildSectionCard(
+              title: '语言表达',
+              icon: Icons.translate,
+              iconColor: Colors.purple,
+              content: result.expression,
+            ),
+            const SizedBox(height: 16),
+            _buildSectionCard(
+              title: '改进建议',
+              icon: Icons.lightbulb_outline,
+              iconColor: Colors.orange,
+              content: result.suggestions,
+            ),
+            if (result.examplerewrite.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildExampleCard(result.examplerewrite),
+            ],
             const SizedBox(height: 32),
           ],
         ),
@@ -181,20 +80,96 @@ class ResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4),
-      child: Row(
+  Widget _buildScoreCard(Color scoreColor, dynamic gradingResult) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 30),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            scoreColor.withOpacity(0.1),
+            scoreColor.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
         children: [
-          Icon(icon, size: 20, color: AppTheme.primaryColor),
-          const SizedBox(width: 8),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 160,
+                height: 160,
+                child: CircularProgressIndicator(
+                  value: gradingResult.score / 100,
+                  strokeWidth: 14,
+                  backgroundColor: scoreColor.withOpacity(0.15),
+                  valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '${gradingResult.score}',
+                        style: TextStyle(
+                          fontSize: 56,
+                          fontWeight: FontWeight.bold,
+                          color: scoreColor,
+                        ),
+                      ),
+                      Text(
+                        '/100',
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: scoreColor,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      gradingResult.level,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
           Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18, 
-              fontWeight: FontWeight.bold, 
-              color: Colors.black87,
-              letterSpacing: 0.5,
+            record.title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[800],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            record.questionType,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[500],
             ),
           ),
         ],
@@ -202,33 +177,141 @@ class ResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildExampleRewrite(String text) {
-    if (text.isEmpty) return const SizedBox.shrink();
+  Widget _buildKeyPointsCard(List keypoints) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.blueGrey[50],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blueGrey[100]!),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.format_quote, color: Colors.blueGrey, size: 16),
-              SizedBox(width: 4),
-              Text('示范文本', style: TextStyle(color: Colors.blueGrey, fontSize: 12, fontWeight: FontWeight.bold)),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.checklist_rtl, color: Colors.green, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                '要点覆盖',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
+          ...keypoints.map((kp) {
+            final isHit = kp.status == '命中';
+            final isPartial = kp.status == '部分命中';
+            final color = isHit ? Colors.green : (isPartial ? Colors.orange : Colors.red);
+            final icon = isHit ? Icons.check_circle : (isPartial ? Icons.info : Icons.cancel);
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.06),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withOpacity(0.2)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, color: color, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      kp.point,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isHit ? Colors.black87 : Colors.black54,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      kp.status,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({
+    required String title,
+    required IconData icon,
+    required Color iconColor,
+    required String content,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Text(
-            text,
+            content,
             style: TextStyle(
               fontSize: 14,
-              height: 1.6,
-              color: Colors.blueGrey[900],
-              fontStyle: FontStyle.italic,
+              height: 1.7,
+              color: Colors.grey[700],
             ),
           ),
         ],
@@ -236,21 +319,63 @@ class ResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCardText(String text) {
-    if (text.isEmpty) return const SizedBox.shrink();
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[200]!),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text(
-          text,
-          style: const TextStyle(fontSize: 15, height: 1.6, color: Colors.black87),
+  Widget _buildExampleCard(String text) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.blueGrey[50]!,
+            Colors.blueGrey[100]!.withOpacity(0.5),
+          ],
         ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.blueGrey[200]!.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blueGrey[100],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.auto_awesome_outlined, color: Colors.blueGrey[700], size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '优化示例',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.blueGrey[800],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.7,
+                color: Colors.blueGrey[900],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
