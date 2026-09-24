@@ -8,7 +8,7 @@
 - 按题型组织提示词，向 OpenAI 兼容聊天接口请求 JSON 批改结果；支持在设置页填写接口地址、模型和密钥，并调整批改严格度。
 - 在本地 Hive 存储设置、自定义题目和批改历史；题库中另有静态练习条目，可按条件浏览。
 
-实现入口在 [`lib/main.dart`](lib/main.dart)；核心逻辑可看 [`ocr_service.dart`](lib/data/services/ocr_service.dart)、[`ai_service.dart`](lib/data/services/ai_service.dart) 和 [`storage_service.dart`](lib/data/services/storage_service.dart)。仓库没有记录多人开发的职责分工，个人负责范围需作者确认。
+**个人贡献**：本项目由我独立完成。我实现了 Flutter 练习界面、图片选取与中文 OCR、可配置的 AI 批改请求，以及 Hive 本地题目和历史记录。入口在 [`lib/main.dart`](lib/main.dart)；核心逻辑见 [`ocr_service.dart`](lib/data/services/ocr_service.dart)、[`ai_service.dart`](lib/data/services/ai_service.dart) 和 [`storage_service.dart`](lib/data/services/storage_service.dart)。
 
 ## 面试可讲的技术点
 
